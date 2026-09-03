@@ -1,0 +1,64 @@
+mqtt:
+  enabled: true
+  host: 192.168.77.1
+  port: 1883
+  user: frigatexps
+  password: 5p2Fa4TJYflOUbXN8znn
+  # client_id ОБЯЗАТЕЛЕН явно, отдельно от topic_prefix: Frigate по умолчанию использует
+  # захардкоженный client_id "frigate" независимо от topic_prefix — с двумя инстансами на
+  # одном брокере это коллизия (MQTT-спека не даёт двум клиентам с одинаковым client_id
+  # быть подключёнными одновременно, брокер выталкивает более старого) — оба инстанса
+  # входят в бесконечный цикл переподключений ("MQTT disconnected" каждые ~2с), обнаружено
+  # именно так при первом запуске.
+  client_id: frigate-xps
+  topic_prefix: frigate2
+
+face_recognition:
+  enabled: false
+
+go2rtc:
+  streams:
+    xps:
+      - rtsp://192.168.77.122:8554/xps
+
+ffmpeg:
+  hwaccel_args: []
+
+environment_vars:
+  LIBVA_DRIVER_NAME: i965
+
+cameras:
+  xps:
+    ffmpeg:
+      output_args:
+        record: -f segment -segment_time 10 -segment_format mp4 -reset_timestamps 1 -strftime 1 -vf format=nv12,hwupload -vaapi_device /dev/dri/renderD128 -c:v h264_vaapi -qp 23 -an
+        detect: -r 5 -vf fps=5,scale=640:480,format=yuv420p -threads 2 -f rawvideo -pix_fmt yuv420p
+      inputs:
+        - path: rtsp://127.0.0.1:8554/xps
+          input_args: preset-rtsp-restream
+          roles: [detect, record]
+    live:
+      streams:
+        # Без конкретного разрешения в названии намеренно — реальное качество переключается
+        # динамически из HA (input_select.xps_webcam_resolution) без рестарта этого Frigate,
+        # статичная подпись с числом быстро устареет (см. device_credentials/xps.txt, урок
+        # с первым Frigate-инстансом).
+        "XPS": xps
+    detect:
+      enabled: true
+      width: 640
+      height: 480
+    objects:
+      track:
+        - person
+    record:
+      enabled: true
+      continuous:
+        days: 7
+      alerts:
+        retain:
+          days: 30
+    snapshots:
+      enabled: true
+      retain:
+        default: 30
