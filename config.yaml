@@ -14,7 +14,36 @@ mqtt:
   topic_prefix: frigate2
 
 face_recognition:
-  enabled: false
+  # 2026-09-03: эксперимент — раньше было выключено (не нужно presence-камере), включаем
+  # проверить как работает на изолированном инстансе, ничем не рискуя. Своих лиц пока не
+  # обучено — сначала посмотрим, что покажет "Unknown"/детекция лица как таковая, обучение
+  # (Frigate UI → Face Library) отдельный следующий шаг, если распознавание нужно всерьёз.
+  enabled: true
+
+detectors:
+  # 2026-09-03: эксперимент — замена дефолтного CPU-детектора (TFLite, ~92% одного ядра в
+  # среднем, сам Frigate предупреждает "not recommended") на OpenVINO — оптимизированный
+  # инференс-движок Intel, использует AVX2 (у Ultradell i7-4790 есть) намного эффективнее,
+  # чем обычный TFLite CPU-делегат, даже без выделенного NPU/GPU. Модель ssdlite_mobilenet_v2
+  # уже вшита в образ Frigate (/openvino-model/) — доп. скачивание не требуется.
+  # device не указан явно — OpenVINO сам выбирает CPU по умолчанию, не трогаем GPU
+  # (renderD128 и так занят VAAPI-кодированием у всех камер, не хотим конкуренции).
+  ov:
+    type: openvino
+    # device ОБЯЗАТЕЛЕН явно — в коде Frigate (detection_runners.py) None не подставляется
+    # дефолтом сам, падает на self.ov_core.set_property(None, ...) с TypeError, весь
+    # процесс детектора крашится, watchdog глушит Frigate целиком ("Detection appears to
+    # have stopped. Exiting Frigate..."). Обнаружено именно так при первом включении.
+    device: CPU
+
+model:
+  path: /openvino-model/ssdlite_mobilenet_v2.xml
+  labelmap_path: /openvino-model/coco_91cl_bkgr.txt
+  width: 300
+  height: 300
+  input_tensor: nhwc
+  input_pixel_format: bgr
+  model_type: ssd
 
 go2rtc:
   streams:
