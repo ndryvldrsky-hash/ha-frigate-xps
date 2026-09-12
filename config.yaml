@@ -1,6 +1,6 @@
 mqtt:
   enabled: true
-  host: 192.168.77.1
+  host: 10.0.0.15  # 2026-09-12: адрес хоста в сети Bezeq — не зависит от переезда шлюза 77 на Коин (раньше 192.168.77.1)
   port: 1883
   user: frigatexps
   password: 5p2Fa4TJYflOUbXN8znn
@@ -68,7 +68,11 @@ cameras:
     ffmpeg:
       output_args:
         record: -f segment -segment_time 10 -segment_format mp4 -reset_timestamps 1 -strftime 1 -vf format=nv12,hwupload -vaapi_device /dev/dri/renderD128 -c:v h264_vaapi -qp 23 -an
-        detect: -r 5 -vf fps=5,scale=640:480,format=yuv420p -threads 2 -f rawvideo -pix_fmt yuv420p
+        # 2026-09-12: раньше тут стояло «-r 5 -vf fps=5,scale=640:480,format=yuv420p ...» — в 0.18
+        # Frigate сам добавляет -r и -vf из detect.fps/width/height, дубль давал в логе по два
+        # ffmpeg-ERROR «Multiple -r/-filter options specified» на каждый рестарт ffmpeg (по 42 за
+        # сутки). Оставлены только не-дефолтные части.
+        detect: -threads 2 -f rawvideo -pix_fmt yuv420p
       inputs:
         - path: rtsp://127.0.0.1:8554/xps
           input_args: preset-rtsp-restream
@@ -98,3 +102,5 @@ cameras:
       enabled: true
       retain:
         default: 30
+# Добавляет сам Frigate (UI/миграция схемы) — держим в репо, чтобы файл в контейнере не расходился.
+version: 0.18-0
