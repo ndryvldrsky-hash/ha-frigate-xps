@@ -88,6 +88,20 @@ cameras:
       enabled: true
       width: 640
       height: 480
+    motion:
+      # 2026-09-15: маски на три плашки оверлея телеметрии (рисует overlay_render.ps1 на XPS, репозиторий
+      # xps-machine): часы с долями секунды и живые значения — вечное «движение» для детектора.
+      # Формат 0.18 — словарь именованных масок; координаты под кадр detect 640x480 (пресет 480p).
+      mask:
+        overlay_left:
+          friendly_name: Оверлей телеметрии (левый столбик)
+          coordinates: 0,0,248,0,248,285,0,285
+        overlay_center:
+          friendly_name: Оверлей телеметрии (средний столбик)
+          coordinates: 250,0,450,0,450,200,250,200
+        overlay_right:
+          friendly_name: Оверлей телеметрии (правый столбик)
+          coordinates: 425,0,640,0,640,355,425,355
     objects:
       track:
         - person
