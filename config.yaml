@@ -107,7 +107,10 @@ cameras:
         - person
     record:
       enabled: true
+      # 2026-09-15: выровнено с основным Frigate (все камеры 4/7/30), было непрерывно 7 без срока по движению
       continuous:
+        days: 4
+      motion:
         days: 7
       alerts:
         retain:
